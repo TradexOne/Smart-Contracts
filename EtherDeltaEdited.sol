@@ -137,6 +137,7 @@ contract EtherDelta is SafeMath {
   mapping (address => mapping (address => uint)) public tokens; //mapping of token addresses to mapping of account balances (token=0 means Ether)
   mapping (address => mapping (bytes32 => bool)) public orders; //mapping of user accounts to mapping of order hashes to booleans (true = submitted by user, equivalent to offchain signature)
   mapping (address => mapping (bytes32 => uint)) public orderFills; //mapping of user accounts to mapping of order hashes to uints (amount of order that has been filled)
+  mapping (address => bool) public activeTokens;
 
   event Order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user);
   event Cancel(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s);
@@ -155,7 +156,21 @@ contract EtherDelta is SafeMath {
   function() {
     throw;
   }
-
+  
+  function activateToken(address token) {
+    if (msg.sender != admin) throw;
+    activeTokens[token] = true;
+  }
+  function deactivateToken(address token) {
+    if (msg.sender != admin) throw;
+    activeTokens[token] = false;
+  }
+  function isTokenActive(address token) constant returns(bool) {
+    if (token == 0)
+      return true; // eth is always active
+    return activeTokens[token];
+  }
+  
   function changeAdmin(address admin_) {
     if (msg.sender != admin) throw;
     admin = admin_;
@@ -199,6 +214,7 @@ contract EtherDelta is SafeMath {
   function depositToken(address token, uint amount) {
     //remember to call Token(address).approve(this, amount) or this contract will not be able to do the transfer on your behalf.
     if (token==0) throw;
+    if (!isTokenActive(token)) throw;
     if (!Token(token).transferFrom(msg.sender, this, amount)) throw;
     tokens[token][msg.sender] = safeAdd(tokens[token][msg.sender], amount);
     Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
@@ -217,12 +233,14 @@ contract EtherDelta is SafeMath {
   }
 
   function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) {
+    if (!isTokenActive(tokenGet) || !isTokenActive(tokenGive)) throw;
     bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
     orders[msg.sender][hash] = true;
     Order(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, msg.sender);
   }
 
   function trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s, uint amount) {
+    if (!isTokenActive(tokenGet) || !isTokenActive(tokenGive)) throw;
     //amount is in amountGet terms
     bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
     if (!(
@@ -247,6 +265,7 @@ contract EtherDelta is SafeMath {
   }
 
   function testTrade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s, uint amount, address sender) constant returns(bool) {
+    if (!isTokenActive(tokenGet) || !isTokenActive(tokenGive)) return false;
     if (!(
       tokens[tokenGet][sender] >= amount &&
       availableVolume(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, user, v, r, s) >= amount
