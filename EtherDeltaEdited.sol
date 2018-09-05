@@ -110,6 +110,7 @@ contract StandardToken is Token {
   uint256 public totalSupply;
 }
 
+// More comments at https://github.com/forkdelta/smart_contract/blob/master/contracts/ForkDelta.sol
 contract ReserveToken is StandardToken, SafeMath {
   address public minter;
   function ReserveToken() {
@@ -266,8 +267,8 @@ contract EtherDelta is SafeMath {
 
   function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) {
     if (!isTokenActive(tokenGet) || !isTokenActive(tokenGive)) throw;
-    if (tokenGet != 0 && amountGet < tokensMinAmountBuy[tokenGet]) throw;
-    if (tokenGive != 0 && amountGive < tokensMinAmountSell[tokenGet]) throw;
+    if (amountGet < tokensMinAmountBuy[tokenGet]) throw;
+    if (amountGive < tokensMinAmountSell[tokenGive]) throw;
     bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
     orders[msg.sender][hash] = true;
     Order(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, msg.sender);
