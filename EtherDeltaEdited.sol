@@ -265,7 +265,7 @@ contract EtherDelta is SafeMath {
     return tokens[token][user];
   }
 
-  function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) returns (bytes32) {
+  function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) {
     if (!isTokenActive(tokenGet) || !isTokenActive(tokenGive)) throw;
     if (amountGet < tokensMinAmountBuy[tokenGet]) throw;
     if (amountGive < tokensMinAmountSell[tokenGive]) throw;
