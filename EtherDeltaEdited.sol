@@ -1,4 +1,4 @@
-pragma solidity ^0.4.9;
+pragma solidity ^0.4.22;
 
 contract SafeMath {
   function safeMul(uint a, uint b) internal returns (uint) {
@@ -113,8 +113,9 @@ contract StandardToken is Token {
 // More comments at https://github.com/forkdelta/smart_contract/blob/master/contracts/ForkDelta.sol
 contract ReserveToken is StandardToken, SafeMath {
   address public minter;
-  function ReserveToken() {
+  function ReserveToken(string name_) {
     minter = msg.sender;
+    name = name_;
   }
   function create(address account, uint amount) {
     if (msg.sender != minter) throw;
@@ -150,6 +151,8 @@ contract EtherDelta is SafeMath {
   event Trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address get, address give);
   event Deposit(address token, address user, uint amount, uint balance);
   event Withdraw(address token, address user, uint amount, uint balance);
+  event ActivateToken(address token, string name);
+  event DeactivateToken(address token, string name);
 
   function EtherDelta(address admin_, address feeAccount_, uint feeRebate_) {
     admin = admin_;
@@ -165,10 +168,12 @@ contract EtherDelta is SafeMath {
   function activateToken(address token) {
     if (msg.sender != admin) throw;
     activeTokens[token] = true;
+    ActivateToken(token, Token(token).name());
   }
   function deactivateToken(address token) {
     if (msg.sender != admin) throw;
     activeTokens[token] = false;
+    DeactivateToken(token, Token(token).name());
   }
   function isTokenActive(address token) constant returns(bool) {
     if (token == 0)
