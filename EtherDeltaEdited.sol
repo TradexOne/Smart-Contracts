@@ -63,7 +63,7 @@ contract Token {
   string public symbol;
 }
 
-contract EtherDelta is SafeMath {
+contract TradexOne is SafeMath {
   address public admin; //the admin address
   address public feeAccount; //the account that will receive fees
   mapping (address => uint) public feeMake; //percentage times (1 ether) (sell fee)
@@ -86,7 +86,7 @@ contract EtherDelta is SafeMath {
   event ActivateToken(address token, string symbol);
   event DeactivateToken(address token, string symbol);
 
-  function EtherDelta(address admin_, address feeAccount_) {
+  function TradexOne(address admin_, address feeAccount_) {
     admin = admin_;
     feeAccount = feeAccount_;
   }
