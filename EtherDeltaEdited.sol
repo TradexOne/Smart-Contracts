@@ -68,7 +68,6 @@ contract EtherDelta is SafeMath {
   address public feeAccount; //the account that will receive fees
   mapping (address => uint) public feeMake; //percentage times (1 ether) (sell fee)
   mapping (address => uint) public feeTake; //percentage times (1 ether) (buy fee)
-  uint public feeRebate; //percentage times (1 ether)
   mapping (address => uint) public feeDeposit; //percentage times (1 ether)
   mapping (address => uint) public feeWithdraw; //percentage times (1 ether)
   
@@ -87,10 +86,9 @@ contract EtherDelta is SafeMath {
   event ActivateToken(address token, string symbol);
   event DeactivateToken(address token, string symbol);
 
-  function EtherDelta(address admin_, address feeAccount_, uint feeRebate_) {
+  function EtherDelta(address admin_, address feeAccount_) {
     admin = admin_;
     feeAccount = feeAccount_;
-    feeRebate = feeRebate_;
   }
 
   function() {
@@ -129,7 +127,6 @@ contract EtherDelta is SafeMath {
   }
   function setTokenFeeTake(address token, uint feeTake_) {
     if (msg.sender != admin) throw;
-    //if (feeTake_ < feeRebate) throw;
     feeTake[token] = feeTake_;
   }
   function setTokenFeeDeposit(address token, uint feeDeposit_) {
@@ -150,12 +147,6 @@ contract EtherDelta is SafeMath {
   function changeFeeAccount(address feeAccount_) {
     if (msg.sender != admin) throw;
     feeAccount = feeAccount_;
-  }
-
-  function changeFeeRebate(uint feeRebate_) {
-    if (msg.sender != admin) throw;
-    //if (feeRebate_ < feeRebate || feeRebate_ > feeTake) throw;
-    feeRebate = feeRebate_;
   }
 
   function deposit() payable {
@@ -229,10 +220,9 @@ contract EtherDelta is SafeMath {
   function tradeBalances(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address user, uint amount) private {
     uint feeMakeXfer = safeMul(amount, feeMake[tokenGet]) / (1 ether);
     uint feeTakeXfer = safeMul(amount, feeTake[tokenGet]) / (1 ether);
-    uint feeRebateXfer = 0;
     tokens[tokenGet][msg.sender] = safeSub(tokens[tokenGet][msg.sender], safeAdd(amount, feeTakeXfer));
-    tokens[tokenGet][user] = safeAdd(tokens[tokenGet][user], safeSub(safeAdd(amount, feeRebateXfer), feeMakeXfer));
-    tokens[tokenGet][feeAccount] = safeAdd(tokens[tokenGet][feeAccount], safeSub(safeAdd(feeMakeXfer, feeTakeXfer), feeRebateXfer));
+    tokens[tokenGet][user] = safeAdd(tokens[tokenGet][user], safeSub(amount, feeMakeXfer));
+    tokens[tokenGet][feeAccount] = safeAdd(tokens[tokenGet][feeAccount], safeAdd(feeMakeXfer, feeTakeXfer));
     tokens[tokenGive][user] = safeSub(tokens[tokenGive][user], safeMul(amountGive, amount) / amountGet);
     tokens[tokenGive][msg.sender] = safeAdd(tokens[tokenGive][msg.sender], safeMul(amountGive, amount) / amountGet);
   }
